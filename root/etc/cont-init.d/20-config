@@ -1,4 +1,36 @@
-#!/usr/bin/with-contenv bash
-chown -R "$PUID:$PGID" /pokemmo
-echo "$PUID" > /config/start1
-echo "$PGID" > /config/start2
+#!/bin/bash
+
+# Ensure proper permissions for PokeMMO directory
+chown -R 1000:1000 /pokemmo
+chmod -R u=rwX,g=rX,o=rX /pokemmo
+
+# Create required directories if they don't exist
+mkdir -p /pokemmo/config
+mkdir -p /pokemmo/roms
+mkdir -p /pokemmo/data/mods
+
+# Download ROMs if they don't exist
+if [ ! -f "/pokemmo/roms/pokemon_black.nds" ]; then
+    wget -q https://dir.chesher.xyz/Media/PokeMMO/pokemon_black.nds -O /pokemmo/roms/pokemon_black.nds
+fi
+
+if [ ! -f "/pokemmo/roms/pokemon_emerald.gba" ]; then
+    wget -q https://dir.chesher.xyz/Media/PokeMMO/pokemon_emerald.gba -O /pokemmo/roms/pokemon_emerald.gba
+fi
+
+if [ ! -f "/pokemmo/roms/pokemon_firered.gba" ]; then
+    wget -q https://dir.chesher.xyz/Media/PokeMMO/pokemon_firered.gba -O /pokemmo/roms/pokemon_firered.gba
+fi
+
+if [ ! -f "/pokemmo/roms/pokemon_platinum.nds" ]; then
+    wget -q https://dir.chesher.xyz/Media/PokeMMO/pokemon_platinum.nds -O /pokemmo/roms/pokemon_platinum.nds
+fi
+
+# Set proper permissions for ROMs
+chmod 644 /pokemmo/roms/*.{nds,gba} 2>/dev/null || true
+
+# Set proper permissions for created directories
+chown -R 1000:1000 /pokemmo/config /pokemmo/roms /pokemmo/data/mods
+
+# Clean up old environment variables that aren't needed
+rm -f /config/start1 /config/start2

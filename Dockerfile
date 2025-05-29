@@ -1,7 +1,14 @@
-FROM ghcr.io/linuxserver/baseimage-kasmvnc:ubuntujammy
+FROM kasmweb/core-ubuntu-jammy:1.14.0
+LABEL maintainer="DevelopmentCats"
+LABEL org.opencontainers.image.title="PokeMMO for Kasm Workspaces"
+LABEL org.opencontainers.image.description="PokeMMO client running in Kasm Workspaces"
+LABEL org.opencontainers.image.source="https://github.com/DevelopmentCats/PokeMMO-docker"
 
-LABEL maintainer="lanjelin"
+USER root
 
+ENV HOME /home/kasm-default-profile
+ENV STARTUPDIR /dockerstartup
+ENV INST_SCRIPTS $STARTUPDIR/install
 ENV TITLE=PokeMMO-Docker
 ENV REVISION=28887
 ENV XDG_SESSION_TYPE=x11
@@ -9,33 +16,32 @@ ENV XDG_SESSION_TYPE=x11
 # add local files
 COPY /root /
 
-RUN \
-    sed -i 's|</applications>|  <application title="PokeMMO-Docker" type="normal">\n    <maximized>no</maximized>\n  </application>\n</applications>|' /etc/xdg/openbox/rc.xml && \
-    mkdir -p /pokemmo && mkdir -p /usr/share/man/man1 && \
-  echo "**** update packages ****" && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-      wget \
-      unzip \
-      default-jre \
-      openjdk-17-jre && \
-  echo "**** install PokeMMO ****" && \
+WORKDIR $INST_SCRIPTS
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    unzip \
+    default-jre \
+    openjdk-17-jre \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PokeMMO
+RUN mkdir -p /pokemmo && \
     wget https://pokemmo.com/download_file/1/ -O /pokemmo/PokeMMO-Client.zip && \
     wget https://pokemmo.com/build/images/opengraph.ce52eb8f.png -O /pokemmo/PokeMMO.png && \
     cd /pokemmo && unzip PokeMMO-Client.zip && \
-  echo "**** setting permissions ****" && \
-    find /pokemmo -perm 700 -exec chmod 755 {} + && \
-    find /pokemmo -perm 600 -exec chmod 644 {} + && \
+    rm -f /pokemmo/PokeMMO-Client.zip && \
+    chmod -R u=rwX,g=rX,o=rX /pokemmo && \
     chmod 755 /defaults/autostart && \
-  echo "**** cleanup ****" && \
-    rm -rf \
-      /tmp/* \
-      /var/lib/apt/lists/* \
-      /var/tmp/* \
-      /pokemmo/PokeMMO-Client.zip
+    chown -R 1000:1000 /pokemmo
 
-# ports and volumes
-EXPOSE 3000 3001
+# Create desktop shortcut
+RUN mkdir -p $HOME/Desktop && \
+    echo "[Desktop Entry]\nName=PokeMMO\nExec=java -jar /pokemmo/PokeMMO.jar\nIcon=/pokemmo/PokeMMO.png\nType=Application\nCategories=Game;" > $HOME/Desktop/pokemmo.desktop && \
+    chmod +x $HOME/Desktop/pokemmo.desktop
 
-WORKDIR /pokemmo
+# Switch back to non-root user
+USER 1000
+
+WORKDIR $HOME
 VOLUME /pokemmo/config

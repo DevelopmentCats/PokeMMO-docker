@@ -1,2 +1,3 @@
-#!/bin/bash
-(cd /pokemmo && ./PokeMMO.sh)
+#!/usr/bin/env bash
+cd /pokemmo
+exec java -jar PokeMMO.jar
